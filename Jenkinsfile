@@ -43,3 +43,88 @@ pipeline {
         }
     }
 }
+ stage('Build Docker Image') {
+            steps {
+                sh 'printenv'
+                sh 'docker build -t poojadocker404/solar-system:$GIT_COMMIT .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
+                    sh '''
+                        echo "Logging in to Docker Hub..."
+                        echo "$DOCKER_PAT" | docker login -u poojadocker404 --password-stdin
+                        
+                        echo "Pushing image to Docker Hub..."
+                        docker push poojadocker404/solar-system:$GIT_COMMIT
+                    '''
+                }
+            }
+        }
+    }
+ stage('Build Docker Image') {
+            steps {
+                sh 'printenv'
+                sh 'docker build -t poojadocker404/solar-system:$GIT_COMMIT .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
+                    sh '''
+                        echo "Logging in to Docker Hub..."
+                        echo "$DOCKER_PAT" | docker login -u poojadocker404 --password-stdin
+                        
+                        echo "Pushing image to Docker Hub..."
+                        docker push poojadocker404/solar-system:$GIT_COMMIT
+                    '''
+                }
+            }
+        }
+    }
+ stage('Build Docker Image') {
+            steps {
+                sh 'printenv'
+                sh 'docker build -t poojadocker404/solar-system:$GIT_COMMIT .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
+                    sh '''
+                        echo "Logging in to Docker Hub..."
+                        echo "$DOCKER_PAT" | docker login -u poojadocker404 --password-stdin
+                        
+                        echo "Pushing image to Docker Hub..."
+                        docker push poojadocker404/solar-system:$GIT_COMMIT
+                    '''
+                }
+            }
+        }
+    }
+ stage('Build Docker Image') {
+            steps {
+                sh 'printenv'
+                sh 'docker build -t poojadocker404/register-app:$GIT_COMMIT .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
+                    sh '''
+                        echo "Logging in to Docker Hub..."
+                        echo "$DOCKER_PAT" | docker login -u poojadocker404 --password-stdin
+                        
+                        echo "Pushing image to Docker Hub..."
+                        docker push poojadocker404/register-app:$GIT_COMMIT
+                    '''
+                }
+            }
+        }
+    }
+
