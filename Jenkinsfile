@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     tools {
         jdk 'Java17'
         maven 'M398'
@@ -8,11 +7,16 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'poojadocker404/register-app'
-        IMAGE_TAG = "${env.GIT_COMMIT}"
-        DOCKER_IMAGE = "${IMAGE_NAME}"
+        IMAGE_TAG = "${GIT_COMMIT}"
+        DOCKER_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
     }
 
     stages {
+        stage("Checkout from SCM") {
+            steps {
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/DevTools-Pooja-CN/register-app'
+            }
+        }
 
         stage("Build Application") {
             steps {
@@ -47,19 +51,20 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh 'printenv'
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-                sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
-                    sh '''
+                    sh """
+                        echo "Logging in to Docker Hub..."
                         echo "$DOCKER_PAT" | docker login -u poojadocker404 --password-stdin
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        docker push ${IMAGE_NAME}:latest
-                    '''
+
+                        echo "Pushing image to Docker Hub..."
+                        docker push ${DOCKER_IMAGE}
+                    """
                 }
             }
         }
@@ -67,7 +72,7 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 sh """
-                trivy image --exit-code 1 --severity HIGH,CRITICAL --format json --output trivy-report.json $DOCKER_IMAGE:latest || echo "Vulnerabilities found"
+                trivy image --exit-code 1 --severity HIGH,CRITICAL --format json --output trivy-report.json ${DOCKER_IMAGE} || echo "Vulnerabilities found"
                 """
             }
         }
