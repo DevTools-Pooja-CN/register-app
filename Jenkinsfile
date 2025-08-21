@@ -1,8 +1,13 @@
 pipeline {
     agent any
+
     tools {
         jdk 'Java17'
         maven 'M398'
+    }
+
+    environment {
+        DOCKER_IMAGE = "poojadocker404/register-app"
     }
 
     stages {
@@ -36,14 +41,14 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage("Build Docker Image") {
             steps {
                 sh 'printenv'
-                sh 'docker build -t poojadocker404/register-app:$GIT_COMMIT .'
+                sh 'docker build -t ${DOCKER_IMAGE}:${GIT_COMMIT} .'
             }
         }
 
-        stage('Push Docker Image') {
+        stage("Push Docker Image") {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     sh '''
@@ -56,7 +61,14 @@ pipeline {
                 }
             }
         }
+
+        stage("Trivy Scan") {
+            steps {
+                sh """
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL \
+                    --format json --output trivy-report.json ${DOCKER_IMAGE}:${GIT_COMMIT} || echo "Vulnerabilities found"
+                """
+            }
+        }
     }
 }
-
-
