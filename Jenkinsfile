@@ -9,14 +9,10 @@ pipeline {
     environment {
         IMAGE_NAME = 'poojadocker404/register-app'
         IMAGE_TAG = "${env.GIT_COMMIT}"
+        DOCKER_IMAGE = "${IMAGE_NAME}"
     }
 
     stages {
-        stage("Checkout from SCM") {
-            steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/DevTools-Pooja-CN/register-app'
-            }
-        }
 
         stage("Build Application") {
             steps {
@@ -70,17 +66,9 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                sh '''
-                    docker pull aquasec/trivy:latest
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                        -v $(pwd):/root/.cache/ \
-                        aquasec/trivy:latest image \
-                        --exit-code 1 \
-                        --severity HIGH,CRITICAL \
-                        --format json \
-                        --output trivy-report.json \
-                        ${IMAGE_NAME}:latest || echo "Vulnerabilities found"
-                '''
+                sh """
+                trivy image --exit-code 1 --severity HIGH,CRITICAL --format json --output trivy-report.json $DOCKER_IMAGE:latest || echo "Vulnerabilities found"
+                """
             }
         }
     }
