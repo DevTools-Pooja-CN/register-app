@@ -8,6 +8,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'poojadocker404/register-app'
+        IMAGE_TAG = "${env.GIT_COMMIT}"
     }
 
     stages {
@@ -19,13 +20,13 @@ pipeline {
 
         stage("Build Application") {
             steps {
-                sh 'mvn clean package'
+                sh "mvn clean package"
             }
         }
 
         stage("Test Application") {
             steps {
-                sh 'mvn test'
+                sh "mvn test"
             }
         }
 
@@ -33,7 +34,7 @@ pipeline {
             steps {
                 script {
                     withSonarQubeEnv(credentialsId: 'sonar-qube-token') {
-                        sh 'mvn sonar:sonar'
+                        sh "mvn sonar:sonar"
                     }
                 }
             }
@@ -47,20 +48,39 @@ pipeline {
             }
         }
 
-        stage("Build Docker Image") {
+        stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$GIT_COMMIT .'
+                sh 'printenv'
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
             }
         }
 
-        stage("Push Docker Image") {
+        stage('Push Docker Image') {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     sh '''
                         echo "$DOCKER_PAT" | docker login -u poojadocker404 --password-stdin
-                        docker push $IMAGE_NAME:$GIT_COMMIT
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${IMAGE_NAME}:latest
                     '''
                 }
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                sh '''
+                    docker pull aquasec/trivy:latest
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v $(pwd):/root/.cache/ \
+                        aquasec/trivy:latest image \
+                        --exit-code 1 \
+                        --severity HIGH,CRITICAL \
+                        --format json \
+                        --output trivy-report.json \
+                        ${IMAGE_NAME}:latest || echo "Vulnerabilities found"
+                '''
             }
         }
     }
